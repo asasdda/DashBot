@@ -1,48 +1,36 @@
-﻿using Discord;
+using Discord;
 using Discord.WebSocket;
 using System;
 using System.Threading.Tasks;
 
 class Program
 {
-    private static DiscordSocketClient _client = null!;
-
     static async Task Main(string[] args)
     {
-        // Token'ı Render'dan çekiyoruz
+        // 1. Render'daki "GIF_BOT_TOKEN" ortam değişkenini okur
         string? token = Environment.GetEnvironmentVariable("GIF_BOT_TOKEN");
 
         if (string.IsNullOrEmpty(token))
         {
-            Console.WriteLine("❌ KRİTİK HATA: 'GIF_BOT_TOKEN' ortam değişkeni bulunamadı!");
+            Console.WriteLine("❌ HATA: GIF_BOT_TOKEN bulunamadı!");
             return;
         }
 
-        await RunBotAsync(token);
-    }
+        var client = new DiscordSocketClient(new DiscordSocketConfig 
+        { 
+            GatewayIntents = GatewayIntents.None 
+        });
 
-    public static async Task RunBotAsync(string token)
-    {
-        var config = new DiscordSocketConfig { GatewayIntents = GatewayIntents.All | GatewayIntents.MessageContent };
-        _client = new DiscordSocketClient(config);
-
-        _client.Ready += async () => {
-            // Yayında modu ve Twitch linki
-            await _client.SetGameAsync("Dash Shop Aktif!", "https://www.twitch.tv/monstercat", ActivityType.Streaming);
-            Console.WriteLine("✅ BOT BAĞLANDI VE YAYINA GİRDİ!");
+        client.Ready += async () => {
+            // 2. 7/24 "Dash Shop Aktif!" yayını (Twitch linki mor ikon için şart)
+            await client.SetGameAsync("Dash Shop Aktif!", "https://www.twitch.tv/monstercat", ActivityType.Streaming);
+            Console.WriteLine("✅ BOT 7/24 AKTİF VE YAYINDA!");
         };
 
-        _client.MessageReceived += async (message) =>
-        {
-            if (message.Author.IsBot || !message.Content.ToLower().StartsWith("!intro ")) return;
+        await client.LoginAsync(TokenType.Bot, token);
+        await client.StartAsync();
 
-            string tur = message.Content.ToLower().Replace("!intro ", "").Trim();
-            await message.Channel.SendMessageAsync($"🎬 **{tur.ToUpper()}** stili için talebin alındı reis!");
-        };
-
-        await _client.LoginAsync(TokenType.Bot, token);
-        await _client.StartAsync();
-
+        // 3. Botu ayakta tutan sonsuz döngü (Uyaran mekanizması)
         await Task.Delay(-1);
     }
 }
